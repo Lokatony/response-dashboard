@@ -135,6 +135,39 @@
   .sync-banner.success{background:rgba(45,212,167,.12); color:var(--good); border:1px solid rgba(45,212,167,.3);}
   .sync-banner.error{background:rgba(229,72,77,.12); color:var(--bad); border:1px solid rgba(229,72,77,.3);}
   @keyframes fadeIn{from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);}}
+  @media(max-width:480px){
+    .wrap{padding:14px 12px 60px;}
+    header{padding-bottom:14px;margin-bottom:18px;gap:10px;}
+    h1{font-size:17px;}
+    .sub{font-size:11.5px;}
+    .now{font-size:11px;}
+    .kpis{grid-template-columns:repeat(2,1fr);gap:9px;}
+    .kpi{padding:12px;border-radius:11px;}
+    .kpi .label{font-size:10.5px;margin-bottom:5px;}
+    .kpi .value{font-size:19px;}
+    .kpi .value div{font-size:11px !important;}
+    .section{padding:14px;border-radius:12px;margin-bottom:14px;}
+    .section h2{font-size:14px;}
+    .section .desc{font-size:11.5px;margin-bottom:12px;}
+    .eyebrow{font-size:10px;}
+    .pulseboard{grid-template-columns:repeat(2,1fr);gap:9px;}
+    .pcard{padding:11px;border-radius:10px;}
+    .pcard .pname{font-size:12.5px;}
+    .pcard .time{font-size:16px;}
+    .pcard .agent{font-size:10px;}
+    .two-col{gap:12px;}
+    .chartbox{height:210px;}
+    .grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;}
+    input,select,textarea{padding:8px 9px;font-size:13px;}
+    .btn{padding:9px 14px;font-size:12.5px;}
+    table{font-size:11.5px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;}
+    th{font-size:10px;padding:6px 6px;}
+    td{padding:7px 6px;}
+    .filters{gap:7px;}
+    .filters select{min-width:110px;font-size:12px;}
+    .badge{font-size:10px;padding:2px 7px;}
+    .sync-banner{font-size:12px;padding:10px 12px;}
+  }
 </style>
 </head>
 <body>
@@ -203,61 +236,8 @@
   </div>
 
   <div class="section">
-    <div class="eyebrow">إدخال يومي</div>
-    <h2>تسجيل أداء شيفت</h2>
-    <div class="desc">ده الجزء اللي محتاج إدخالك يدويًا — فيسبوك مش بيقول مين ردت ومين اتأخرت، فلازم تحدد الصفحة والشيفت والموظفة والرقم.</div>
-    <div class="grid">
-      <div class="field"><label>التاريخ</label><input id="recDate" type="date"></div>
-      <div class="field"><label>الصفحة</label><select id="recPage"></select></div>
-      <div class="field"><label>الشيفت</label><select id="recShift"><option value="صبح">صبح</option><option value="ليل">ليل</option></select></div>
-      <div class="field"><label>اسم الموظفة</label><input id="recAgent" placeholder="مثلاً: سارة"></div>
-      <div class="field"><label>متوسط وقت الرد (دقيقة)</label><input id="recAvg" type="number" min="0" step="0.1"></div>
-      <div class="field"><label>عدد الرسايل اللي اتردّ عليها</label><input id="recTotal" type="number" min="0" value="0"></div>
-      <div class="field"><label>عدد الردود المتأخرة</label><input id="recLate" type="number" min="0" value="0"></div>
-    </div>
-    <div class="row-actions">
-      <button class="btn" onclick="addRecord()">حفظ السجل</button>
-      <span class="save-msg" id="saveMsg"></span>
-    </div>
-
-    <details>
-      <summary>حساب المتوسط تلقائيًا من بيانات فيسبوك (اختياري، لمن يمتلك Access Token)</summary>
-      <div class="desc" style="margin-top:10px;">
-        الصق هنا الـ JSON اللي بيرجعه Graph API لما تعمل طلب زي:
-        <span class="mono" style="color:var(--text);">/{page-id}/conversations?fields=messages{message,from,created_time}&access_token=...</span>
-        واكتب اسم صفحتك بالظبط زي ما ظاهر في حقل "from" بتاع فيسبوك، عشان نميّز رسايلك عن رسايل العملاء ونحسب فرق الوقت.
-      </div>
-      <div class="grid" style="margin-top:10px;">
-        <div class="field"><label>اسم الصفحة كما يظهر في from.name</label><input id="jsonPageName" placeholder="مثلاً: My Page Name"></div>
-      </div>
-      <label style="margin-top:10px;">JSON من Graph API</label>
-      <textarea id="jsonInput" placeholder='{"data":[{"messages":{"data":[{"message":"...","from":{"name":"..."},"created_time":"2026-07-27T10:00:00+0000"}]}}]}'></textarea>
-      <div class="row-actions">
-        <button class="btn secondary" onclick="parseGraphJson()">احسب المتوسط وعبّي الحقول</button>
-      </div>
-      <div class="save-msg" id="parseMsg"></div>
-    </details>
-  </div>
-
-  <div class="section">
-    <div class="eyebrow">سجل كامل</div>
-    <h2>كل السجلات المسجّلة</h2>
-    <div class="filters">
-      <select id="fPage"><option value="">كل الصفحات</option></select>
-      <select id="fShift"><option value="">كل الشيفتات</option><option value="صبح">صبح</option><option value="ليل">ليل</option></select>
-      <select id="fAgent"><option value="">كل الموظفات</option></select>
-    </div>
-    <table>
-      <thead><tr>
-        <th>التاريخ</th><th>الصفحة</th><th>الشيفت</th><th>الموظفة</th><th>متوسط الرد</th><th>الرسايل</th><th>المتأخرة</th><th>الحالة</th><th></th>
-      </tr></thead>
-      <tbody id="recTableBody"></tbody>
-    </table>
-    <div class="empty-hint" id="emptyHint" style="display:none;">لسه مفيش سجلات. ابدأ بإضافة صفحة، وبعدين سجّل أول شيفت من فوق.</div>
-  </div>
-
-  <div class="section">
     <div class="eyebrow">سجل تفصيلي أوتوماتيكي</div>
+
     <h2>رسايل العملاء وردود المودريتور</h2>
     <div class="desc">كل رسالة عميل، مين ردّ عليها، وقتها، ووقت الرد، والتأخير بالدقيقة. أي رد تأخر أكتر من 5 دقايق بيتحدد باللون الأحمر. البيانات هنا بتيجي أوتوماتيك من المزامنة، مفيش إدخال يدوي.</div>
     <div class="filters">
@@ -373,8 +353,6 @@ function statusLabel(s){ return s==='good'?'ملتزمة':(s==='warn'?'بطيئ�
 
 function fillPageSelects(){
   const opts = data.pages.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-  document.getElementById('recPage').innerHTML = opts || '<option value="">أضف صفحة الأول</option>';
-  document.getElementById('fPage').innerHTML = '<option value="">كل الصفحات</option>' + opts;
   document.getElementById('trendPageFilter').innerHTML = opts || '<option value="">لا توجد صفحات</option>';
 }
 
@@ -400,61 +378,9 @@ function removePage(id){
   saveData(); renderAll();
 }
 
-function addRecord(){
-  const pageId = document.getElementById('recPage').value;
-  const date = document.getElementById('recDate').value || new Date().toISOString().slice(0,10);
-  const shift = document.getElementById('recShift').value;
-  const agent = document.getElementById('recAgent').value.trim();
-  const avg = parseFloat(document.getElementById('recAvg').value);
-  const total = parseInt(document.getElementById('recTotal').value)||0;
-  const late = parseInt(document.getElementById('recLate').value)||0;
-  const msg = document.getElementById('saveMsg');
-  if(!pageId || !agent || isNaN(avg)){
-    msg.style.color='var(--bad)'; msg.textContent='حدد الصفحة واسم الموظفة والمتوسط الأول.';
-    return;
-  }
-  data.records.push({id:'rec_'+Date.now(), date, pageId, shift, agent, avg, total, late});
-  document.getElementById('recAgent').value=''; document.getElementById('recAvg').value='';
-  document.getElementById('recTotal').value=0; document.getElementById('recLate').value=0;
-  msg.style.color='var(--good)'; msg.textContent='تم الحفظ ✓';
-  setTimeout(()=>msg.textContent='',2000);
-  saveData(); renderAll();
-}
 function removeRecord(id){
   data.records = data.records.filter(r=>r.id!==id);
   saveData(); renderAll();
-}
-
-function parseGraphJson(){
-  const pmsg = document.getElementById('parseMsg');
-  const pageName = document.getElementById('jsonPageName').value.trim();
-  let raw = document.getElementById('jsonInput').value.trim();
-  if(!raw || !pageName){ pmsg.style.color='var(--bad)'; pmsg.textContent='محتاج تحط اسم الصفحة والـ JSON الأول.'; return; }
-  let json;
-  try{ json = JSON.parse(raw); }
-  catch(e){ pmsg.style.color='var(--bad)'; pmsg.textContent='الـ JSON مش صحيح، تأكد إنك ناسخ الرد كامل من Graph API Explorer.'; return; }
-  const conversations = json.data || [];
-  let diffs = [];
-  conversations.forEach(conv=>{
-    const msgs = (conv.messages && conv.messages.data) ? conv.messages.data.slice().sort((a,b)=> new Date(a.created_time) - new Date(b.created_time)) : [];
-    for(let i=1;i<msgs.length;i++){
-      const prev = msgs[i-1], cur = msgs[i];
-      const prevIsCustomer = (prev.from && prev.from.name) !== pageName;
-      const curIsPage = (cur.from && cur.from.name) === pageName;
-      if(prevIsCustomer && curIsPage){
-        const diffMin = (new Date(cur.created_time) - new Date(prev.created_time)) / 60000;
-        if(diffMin>=0) diffs.push(diffMin);
-      }
-    }
-  });
-  if(!diffs.length){ pmsg.style.color='var(--warn)'; pmsg.textContent='مفيش رسايل رد لقيتها بالاسم ده. تأكد إن اسم الصفحة مطابق لحقل from.name بالظبط.'; return; }
-  const avg = diffs.reduce((a,b)=>a+b,0)/diffs.length;
-  const target = data.pages.find(p=>p.id===document.getElementById('recPage').value)?.target || 5;
-  const lateCount = diffs.filter(d=>d>target).length;
-  document.getElementById('recAvg').value = avg.toFixed(1);
-  document.getElementById('recTotal').value = diffs.length;
-  document.getElementById('recLate').value = lateCount;
-  pmsg.style.color='var(--good)'; pmsg.textContent = `تم الحساب: ${diffs.length} رد، متوسط ${avg.toFixed(1)} دقيقة. راجع الحقول فوق واحفظ السجل.`;
 }
 
 function renderKPIs(){
@@ -510,37 +436,6 @@ function renderPulseBoard(){
   box.innerHTML = html;
 }
 
-function renderTable(){
-  const fPage = document.getElementById('fPage').value;
-  const fShift = document.getElementById('fShift').value;
-  const fAgent = document.getElementById('fAgent').value;
-  let recs = data.records.slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
-  if(fPage) recs = recs.filter(r=>r.pageId===fPage);
-  if(fShift) recs = recs.filter(r=>r.shift===fShift);
-  if(fAgent) recs = recs.filter(r=>r.agent===fAgent);
-
-  const agentSet = [...new Set(data.records.map(r=>r.agent))];
-  document.getElementById('fAgent').innerHTML = '<option value="">كل الموظفات</option>' + agentSet.map(a=>`<option ${a===fAgent?'selected':''} value="${a}">${a}</option>`).join('');
-
-  const body = document.getElementById('recTableBody');
-  document.getElementById('emptyHint').style.display = data.records.length? 'none':'block';
-  body.innerHTML = recs.map(r=>{
-    const pg = data.pages.find(p=>p.id===r.pageId);
-    const st = pg ? statusOf(r.avg, pg.target) : 'good';
-    return `<tr>
-      <td>${r.date}</td>
-      <td>${pg?pg.name:'—'}</td>
-      <td>${r.shift}</td>
-      <td>${r.agent}</td>
-      <td class="mono">${r.avg.toFixed(1)} د</td>
-      <td class="mono">${r.total}</td>
-      <td class="mono">${r.late}</td>
-      <td><span class="badge ${st}">${statusLabel(st)}</span> ${r.auto?'<span class="sub" style="font-size:10px;color:var(--muted);">أوتو</span>':''}</td>
-      <td>${r.auto?'':'<span class="del" onclick="removeRecord(\''+r.id+'\')">حذف</span>'}</td>
-    </tr>`;
-  }).join('');
-}
-
 function renderAgentChart(){
   const byAgent = {};
   data.records.forEach(r=>{ (byAgent[r.agent] = byAgent[r.agent]||[]).push(r.avg); });
@@ -580,7 +475,6 @@ function renderAll(){
   renderPageTags();
   renderKPIs();
   renderPulseBoard();
-  renderTable();
   renderAgentChart();
   renderTrendChart();
   renderMessageLog();
@@ -633,13 +527,9 @@ document.getElementById('mfShift').addEventListener('change', renderMessageLog);
 document.getElementById('mfAgent').addEventListener('change', renderMessageLog);
 document.getElementById('mfLate').addEventListener('change', renderMessageLog);
 
-document.getElementById('fPage').addEventListener('change', renderTable);
-document.getElementById('fShift').addEventListener('change', renderTable);
-document.getElementById('fAgent').addEventListener('change', renderTable);
 document.getElementById('trendPageFilter').addEventListener('change', renderTrendChart);
 
 (async function init(){
-  document.getElementById('recDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('ar-EG', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
   await loadData();
   if(data.ghOwner) document.getElementById('ghOwner').value = data.ghOwner;
