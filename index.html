@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة متابعة الرد | البيدجات</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F1419">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="متابعة الرد">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0F1419;
+    --surface:#161D25;
+    --surface2:#1E2730;
+    --border:#28323C;
+    --text:#E8EDF2;
+    --muted:#8B98A5;
+    --good:#2DD4A7;
+    --warn:#F0A62A;
+    --bad:#E5484D;
+    --accent:#F0A62A;
+    --accent-dim:#7a5a22;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Tajawal',Tahoma,Arial,sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* header */
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:28px;border-bottom:1px solid var(--border);padding-bottom:20px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px rgba(45,212,167,.15);animation:pulse 2s infinite;}
+  h1{font-size:22px;font-weight:900;margin:0;letter-spacing:.2px;}
+  .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+  .now{color:var(--muted);font-size:13px;text-align:left;}
+  .now b{color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:600;}
+
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  /* KPI row */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  @media(max-width:800px){.kpis{grid-template-columns:repeat(2,1fr);}}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;}
+  .kpi .label{color:var(--muted);font-size:12px;margin-bottom:8px;}
+  .kpi .value{font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;}
+  .kpi .value span{font-size:14px;color:var(--muted);font-family:'Tajawal';font-weight:500;}
+  .kpi.good .value{color:var(--good);}
+  .kpi.warn .value{color:var(--warn);}
+  .kpi.bad .value{color:var(--bad);}
+
+  /* section */
+  .section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:20px;}
+  .section h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:8px;}
+  .section .desc{color:var(--muted);font-size:12.5px;margin-bottom:16px;}
+  .eyebrow{font-size:11px;color:var(--accent);letter-spacing:1px;font-weight:700;margin-bottom:4px;}
+
+  /* pulse board (signature element) */
+  .pulseboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;}
+  .pcard{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;}
+  .pcard .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .pcard .pname{font-weight:700;font-size:14px;}
+  .pcard .shift{color:var(--muted);font-size:11px;}
+  .pcard .status{display:flex;align-items:center;gap:8px;}
+  .pcard .pulse{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .pcard .pulse.good{background:var(--good);box-shadow:0 0 0 5px rgba(45,212,167,.15);animation:pulse 2s infinite;}
+  .pcard .pulse.warn{background:var(--warn);box-shadow:0 0 0 5px rgba(240,166,42,.15);animation:pulse 1.4s infinite;}
+  .pcard .pulse.bad{background:var(--bad);box-shadow:0 0 0 5px rgba(229,72,77,.15);animation:pulse .9s infinite;}
+  .pcard .pulse.none{background:#3A4550;}
+  .pcard .time{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;}
+  .pcard .agent{color:var(--muted);font-size:11.5px;margin-top:6px;}
+  .empty-hint{color:var(--muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:10px;}
+
+  /* forms */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  input,select,textarea{
+    width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:9px 10px;font-family:'Tajawal';font-size:13.5px;outline:none;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  textarea{resize:vertical;min-height:90px;font-family:'JetBrains Mono',monospace;font-size:12px;direction:ltr;text-align:left;}
+  .field{margin-bottom:0;}
+  .btn{
+    background:var(--accent);color:#1A1200;border:none;border-radius:8px;padding:10px 18px;
+    font-family:'Tajawal';font-weight:700;font-size:13.5px;cursor:pointer;transition:opacity .15s;
+  }
+  .btn:hover{opacity:.88;}
+  .btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad);}
+  .row-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  details{border-top:1px solid var(--border);margin-top:14px;padding-top:14px;}
+  summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--accent);list-style:none;}
+  summary::-webkit-details-marker{display:none;}
+  summary:before{content:"+ ";}
+  details[open] summary:before{content:"− ";}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:right;color:var(--muted);font-weight:600;font-size:11.5px;padding:8px 10px;border-bottom:1px solid var(--border);}
+  td{padding:9px 10px;border-bottom:1px solid var(--border);}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;}
+  .badge.good{background:rgba(45,212,167,.12);color:var(--good);}
+  .badge.warn{background:rgba(240,166,42,.12);color:var(--warn);}
+  .badge.bad{background:rgba(229,72,77,.12);color:var(--bad);}
+  .del{cursor:pointer;color:var(--muted);font-size:12px;}
+  .del:hover{color:var(--bad);}
+  .filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .filters select{width:auto;min-width:130px;}
+
+  .chartbox{height:280px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:800px){.two-col{grid-template-columns:1fr;}}
+  .tag-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .tag{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;display:flex;align-items:center;gap:8px;}
+  .save-msg{font-size:12px;color:var(--good);height:16px;margin-top:8px;}
+  .sync-banner{
+    margin-top:14px; padding:12px 16px; border-radius:10px; font-size:14px; font-weight:700;
+    display:flex; align-items:center; gap:10px; animation:fadeIn .25s ease;
+  }
+  .sync-banner.loading{background:rgba(240,166,42,.12); color:var(--warn); border:1px solid rgba(240,166,42,.3);}
+  .sync-banner.success{background:rgba(45,212,167,.12); color:var(--good); border:1px solid rgba(45,212,167,.3);}
+  .sync-banner.error{background:rgba(229,72,77,.12); color:var(--bad); border:1px solid rgba(229,72,77,.3);}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <span class="dot"></span>
+      <div>
+        <h1>لوحة متابعة الرد على البيدجات</h1>
+        <div class="sub">تتبّع سرعة رد الفريق على كل صفحة وكل شيفت</div>
+      </div>
+    </div>
+    <div class="now">اليوم <b id="todayLabel">—</b></div>
+  </header>
+
+  <div class="section" id="syncBox" style="border-color:var(--accent-dim);">
+    <div class="eyebrow">مزامنة أوتوماتيكية</div>
+    <h2>سحب البيانات تلقائيًا من GitHub</h2>
+    <div class="desc">حط بيانات الريبو والـ Token (صلاحية قراءة بس) والداش بورد هيسحب البيانات لوحده أول ما يفتح، وهيحدّثها كل 5 دقايق من غير أي تدخل منك.</div>
+    <div class="grid">
+      <div class="field"><label>اسم المستخدم/المنظمة (owner)</label><input id="ghOwner" placeholder="Lokatony"></div>
+      <div class="field"><label>اسم الريبو</label><input id="ghRepo" placeholder="fb-response-tracker"></div>
+      <div class="field"><label>مسار الملف</label><input id="ghPath" placeholder="data.json"></div>
+      <div class="field" style="grid-column:span 2;"><label>GitHub Token (صلاحية قراءة بس)</label><input id="ghToken" type="password" placeholder="github_pat_..."></div>
+    </div>
+    <div class="row-actions">
+      <button class="btn" onclick="saveAndSync()">حفظ ومزامنة الآن</button>
+    </div>
+    <div id="syncMsg" class="sync-banner" style="display:none;"></div>
+  </div>
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div class="section">
+    <div class="eyebrow">حالة لحظية</div>
+    <h2>لوحة النبض — آخر تحديث لكل صفحة/شيفت</h2>
+    <div class="desc">كل بطاقة بتوري آخر متوسط وقت رد مسجّل لصفحة معينة في شيفت معين. النقطة بتنبض حسب سرعة الرد مقارنة بالهدف اللي حددته للصفحة.</div>
+    <div class="pulseboard" id="pulseBoard"></div>
+  </div>
+
+  <div class="two-col">
+    <div class="section">
+      <div class="eyebrow">مقارنة</div>
+      <h2>متوسط وقت الرد لكل موظفة</h2>
+      <div class="chartbox"><canvas id="agentChart"></canvas></div>
+    </div>
+    <div class="section">
+      <div class="eyebrow">اتجاه</div>
+      <h2>تطور وقت الرد بمرور الأيام</h2>
+      <div class="filters"><select id="trendPageFilter"></select></div>
+      <div class="chartbox"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">إدارة الصفحات</div>
+    <h2>الصفحات وأهداف وقت الرد</h2>
+    <div class="desc">أضف كل صفحة (بشكل مستقل، حتى لو كل صفحة على بيزنس منفصل) وحدد الهدف بالدقايق — يعني في خلال كام دقيقة المفروض يتم الرد.</div>
+    <div class="grid">
+      <div class="field"><label>اسم الصفحة</label><input id="pgName" placeholder="مثلاً: صفحة المنتج أ"></div>
+      <div class="field"><label>الهدف (دقيقة)</label><input id="pgTarget" type="number" min="1" value="5"></div>
+    </div>
+    <div class="row-actions"><button class="btn" onclick="addPage()">إضافة الصفحة</button></div>
+    <div class="tag-list" id="pageTags"></div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">إدخال يومي</div>
+    <h2>تسجيل أداء شيفت</h2>
+    <div class="desc">ده الجزء اللي محتاج إدخالك يدويًا — فيسبوك مش بيقول مين ردت ومين اتأخرت، فلازم تحدد الصفحة والشيفت والموظفة والرقم.</div>
+    <div class="grid">
+      <div class="field"><label>التاريخ</label><input id="recDate" type="date"></div>
+      <div class="field"><label>الصفحة</label><select id="recPage"></select></div>
+      <div class="field"><label>الشيفت</label><select id="recShift"><option value="صبح">صبح</option><option value="ليل">ليل</option></select></div>
+      <div class="field"><label>اسم الموظفة</label><input id="recAgent" placeholder="مثلاً: سارة"></div>
+      <div class="field"><label>متوسط وقت الرد (دقيقة)</label><input id="recAvg" type="number" min="0" step="0.1"></div>
+      <div class="field"><label>عدد الرسايل اللي اتردّ عليها</label><input id="recTotal" type="number" min="0" value="0"></div>
+      <div class="field"><label>عدد الردود المتأخرة</label><input id="recLate" type="number" min="0" value="0"></div>
+    </div>
+    <div class="row-actions">
+      <button class="btn" onclick="addRecord()">حفظ السجل</button>
+      <span class="save-msg" id="saveMsg"></span>
+    </div>
+
+    <details>
+      <summary>حساب المتوسط تلقائيًا من بيانات فيسبوك (اختياري، لمن يمتلك Access Token)</summary>
+      <div class="desc" style="margin-top:10px;">
+        الصق هنا الـ JSON اللي بيرجعه Graph API لما تعمل طلب زي:
+        <span class="mono" style="color:var(--text);">/{page-id}/conversations?fields=messages{message,from,created_time}&access_token=...</span>
+        واكتب اسم صفحتك بالظبط زي ما ظاهر في حقل "from" بتاع فيسبوك، عشان نميّز رسايلك عن رسايل العملاء ونحسب فرق الوقت.
+      </div>
+      <div class="grid" style="margin-top:10px;">
+        <div class="field"><label>اسم الصفحة كما يظهر في from.name</label><input id="jsonPageName" placeholder="مثلاً: My Page Name"></div>
+      </div>
+      <label style="margin-top:10px;">JSON من Graph API</label>
+      <textarea id="jsonInput" placeholder='{"data":[{"messages":{"data":[{"message":"...","from":{"name":"..."},"created_time":"2026-07-27T10:00:00+0000"}]}}]}'></textarea>
+      <div class="row-actions">
+        <button class="btn secondary" onclick="parseGraphJson()">احسب المتوسط وعبّي الحقول</button>
+      </div>
+      <div class="save-msg" id="parseMsg"></div>
+    </details>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">سجل كامل</div>
+    <h2>كل السجلات المسجّلة</h2>
+    <div class="filters">
+      <select id="fPage"><option value="">كل الصفحات</option></select>
+      <select id="fShift"><option value="">كل الشيفتات</option><option value="صبح">صبح</option><option value="ليل">ليل</option></select>
+      <select id="fAgent"><option value="">كل الموظفات</option></select>
+    </div>
+    <table>
+      <thead><tr>
+        <th>التاريخ</th><th>الصفحة</th><th>الشيفت</th><th>الموظفة</th><th>متوسط الرد</th><th>الرسايل</th><th>المتأخرة</th><th>الحالة</th><th></th>
+      </tr></thead>
+      <tbody id="recTableBody"></tbody>
+    </table>
+    <div class="empty-hint" id="emptyHint" style="display:none;">لسه مفيش سجلات. ابدأ بإضافة صفحة، وبعدين سجّل أول شيفت من فوق.</div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">سجل تفصيلي أوتوماتيكي</div>
+    <h2>رسايل العملاء وردود المودريتور</h2>
+    <div class="desc">كل رسالة عميل، مين ردّ عليها، وقتها، ووقت الرد، والتأخير بالدقيقة. أي رد تأخر أكتر من 5 دقايق بيتحدد باللون الأحمر. البيانات هنا بتيجي أوتوماتيك من المزامنة، مفيش إدخال يدوي.</div>
+    <div class="filters">
+      <select id="mfPage"><option value="">كل الصفحات</option></select>
+      <select id="mfShift"><option value="">كل الشيفتات</option><option value="صبح">صبح</option><option value="ليل">ليل</option></select>
+      <select id="mfAgent"><option value="">كل الموظفات</option></select>
+      <select id="mfLate"><option value="">كل الردود</option><option value="late">المتأخرة بس (+5 د)</option></select>
+    </div>
+    <table>
+      <thead><tr>
+        <th>الموظفة</th><th>الصفحة</th><th>الشيفت</th><th>اسم العميل</th><th>وقت رسالة العميل</th><th>وقت الرد</th><th>التأخير</th>
+      </tr></thead>
+      <tbody id="msgLogBody"></tbody>
+    </table>
+    <div class="empty-hint" id="msgLogEmptyHint" style="display:none;">لسه مفيش رسايل مسجّلة. هتظهر هنا أول ما المزامنة تجيب بيانات من فيسبوك.</div>
+  </div>
+
+</div>
+
+<script>
+let data = { pages: [], records: [], messageLog: [] };
+let agentChart, trendChart;
+
+async function loadData(){
+  try{
+    if(window.storage){
+      const res = await window.storage.get('fb-dashboard-data', false);
+      if(res && res.value){ data = JSON.parse(res.value); }
+    } else {
+      const raw = localStorage.getItem('fb-dashboard-data');
+      if(raw) data = JSON.parse(raw);
+    }
+  }catch(e){ /* no data yet */ }
+  if(!data.pages) data.pages = [];
+  if(!data.records) data.records = [];
+  if(!data.messageLog) data.messageLog = [];
+  if(!data.ghOwner) data.ghOwner = '';
+  if(!data.ghRepo) data.ghRepo = '';
+  if(!data.ghPath) data.ghPath = 'data.json';
+  if(!data.ghToken) data.ghToken = '';
+}
+
+async function saveAndSync(){
+  data.ghOwner = document.getElementById('ghOwner').value.trim();
+  data.ghRepo = document.getElementById('ghRepo').value.trim();
+  data.ghPath = document.getElementById('ghPath').value.trim() || 'data.json';
+  data.ghToken = document.getElementById('ghToken').value.trim();
+  await saveData();
+  await syncFromUrl();
+}
+
+async function syncFromUrl(){
+  const msg = document.getElementById('syncMsg');
+  const { ghOwner, ghRepo, ghPath, ghToken } = data;
+  if(!ghOwner || !ghRepo || !ghToken){ return; }
+  msg.style.display='flex'; msg.className='sync-banner loading'; msg.textContent='⏳ بيسحب البيانات دلوقتي...';
+  try{
+    const apiUrl = `https://api.github.com/repos/${ghOwner}/${ghRepo}/contents/${ghPath || 'data.json'}`;
+    const res = await fetch(apiUrl, {
+      headers: {
+        'Authorization': 'Bearer ' + ghToken,
+        'Accept': 'application/vnd.github.raw+json'
+      }
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    const records = json.records || [];
+    records.forEach(r=>{
+      let pg = data.pages.find(p=>p.name === r.pageName);
+      if(!pg){
+        pg = {id:'auto_'+r.pageKey, name:r.pageName, target:r.target||5};
+        data.pages.push(pg);
+      }
+      const recId = 'auto_'+r.pageKey+'_'+r.date+'_'+r.shift;
+      const idx = data.records.findIndex(x=>x.id===recId);
+      const built = {
+        id: recId, date: r.date, pageId: pg.id, shift: (r.shift==='morning'?'صبح':'ليل'),
+        agent: r.agent, avg: r.avg, total: r.total, late: r.late, auto:true
+      };
+      if(idx>=0) data.records[idx] = built; else data.records.push(built);
+    });
+
+    const msgLog = json.message_log || [];
+    msgLog.forEach(m=>{
+      const idx = data.messageLog.findIndex(x=>x.id===m.id);
+      if(idx>=0) data.messageLog[idx] = m; else data.messageLog.push(m);
+    });
+
+    await saveData();
+    renderAll();
+    const stamp = json.last_updated ? new Date(json.last_updated).toLocaleString('ar-EG') : '';
+    msg.style.display='flex'; msg.className='sync-banner success'; msg.textContent = '✅ تمت المزامنة بنجاح — آخر تحديث من السيرفر: '+stamp;
+  }catch(e){
+    msg.style.display='flex'; msg.className='sync-banner error'; msg.textContent = '⚠️ فشلت المزامنة، تأكد من الـ Token وبيانات الريبو. ('+e.message+')';
+  }
+}
+async function saveData(){
+  try{
+    if(window.storage){
+      await window.storage.set('fb-dashboard-data', JSON.stringify(data), false);
+    } else {
+      localStorage.setItem('fb-dashboard-data', JSON.stringify(data));
+    }
+  }catch(e){ console.error('save failed', e); }
+}
+
+function statusOf(avgMin, target){
+  if(avgMin<=target) return 'good';
+  if(avgMin<=target*2) return 'warn';
+  return 'bad';
+}
+function statusLabel(s){ return s==='good'?'ملتزمة':(s==='warn'?'بطيئة شوية':'متأخرة جدًا'); }
+
+function fillPageSelects(){
+  const opts = data.pages.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('recPage').innerHTML = opts || '<option value="">أضف صفحة الأول</option>';
+  document.getElementById('fPage').innerHTML = '<option value="">كل الصفحات</option>' + opts;
+  document.getElementById('trendPageFilter').innerHTML = opts || '<option value="">لا توجد صفحات</option>';
+}
+
+function renderPageTags(){
+  const box = document.getElementById('pageTags');
+  if(!data.pages.length){ box.innerHTML = '<span class="sub">لسه مفيش صفحات مضافة.</span>'; return; }
+  box.innerHTML = data.pages.map(p=>`
+    <span class="tag">${p.name} · هدف ${p.target} د <span class="del" onclick="removePage('${p.id}')">✕</span></span>
+  `).join('');
+}
+
+function addPage(){
+  const name = document.getElementById('pgName').value.trim();
+  const target = parseFloat(document.getElementById('pgTarget').value) || 5;
+  if(!name) return;
+  data.pages.push({id: 'pg_'+Date.now(), name, target});
+  document.getElementById('pgName').value='';
+  saveData(); renderAll();
+}
+function removePage(id){
+  data.pages = data.pages.filter(p=>p.id!==id);
+  data.records = data.records.filter(r=>r.pageId!==id);
+  saveData(); renderAll();
+}
+
+function addRecord(){
+  const pageId = document.getElementById('recPage').value;
+  const date = document.getElementById('recDate').value || new Date().toISOString().slice(0,10);
+  const shift = document.getElementById('recShift').value;
+  const agent = document.getElementById('recAgent').value.trim();
+  const avg = parseFloat(document.getElementById('recAvg').value);
+  const total = parseInt(document.getElementById('recTotal').value)||0;
+  const late = parseInt(document.getElementById('recLate').value)||0;
+  const msg = document.getElementById('saveMsg');
+  if(!pageId || !agent || isNaN(avg)){
+    msg.style.color='var(--bad)'; msg.textContent='حدد الصفحة واسم الموظفة والمتوسط الأول.';
+    return;
+  }
+  data.records.push({id:'rec_'+Date.now(), date, pageId, shift, agent, avg, total, late});
+  document.getElementById('recAgent').value=''; document.getElementById('recAvg').value='';
+  document.getElementById('recTotal').value=0; document.getElementById('recLate').value=0;
+  msg.style.color='var(--good)'; msg.textContent='تم الحفظ ✓';
+  setTimeout(()=>msg.textContent='',2000);
+  saveData(); renderAll();
+}
+function removeRecord(id){
+  data.records = data.records.filter(r=>r.id!==id);
+  saveData(); renderAll();
+}
+
+function parseGraphJson(){
+  const pmsg = document.getElementById('parseMsg');
+  const pageName = document.getElementById('jsonPageName').value.trim();
+  let raw = document.getElementById('jsonInput').value.trim();
+  if(!raw || !pageName){ pmsg.style.color='var(--bad)'; pmsg.textContent='محتاج تحط اسم الصفحة والـ JSON الأول.'; return; }
+  let json;
+  try{ json = JSON.parse(raw); }
+  catch(e){ pmsg.style.color='var(--bad)'; pmsg.textContent='الـ JSON مش صحيح، تأكد إنك ناسخ الرد كامل من Graph API Explorer.'; return; }
+  const conversations = json.data || [];
+  let diffs = [];
+  conversations.forEach(conv=>{
+    const msgs = (conv.messages && conv.messages.data) ? conv.messages.data.slice().sort((a,b)=> new Date(a.created_time) - new Date(b.created_time)) : [];
+    for(let i=1;i<msgs.length;i++){
+      const prev = msgs[i-1], cur = msgs[i];
+      const prevIsCustomer = (prev.from && prev.from.name) !== pageName;
+      const curIsPage = (cur.from && cur.from.name) === pageName;
+      if(prevIsCustomer && curIsPage){
+        const diffMin = (new Date(cur.created_time) - new Date(prev.created_time)) / 60000;
+        if(diffMin>=0) diffs.push(diffMin);
+      }
+    }
+  });
+  if(!diffs.length){ pmsg.style.color='var(--warn)'; pmsg.textContent='مفيش رسايل رد لقيتها بالاسم ده. تأكد إن اسم الصفحة مطابق لحقل from.name بالظبط.'; return; }
+  const avg = diffs.reduce((a,b)=>a+b,0)/diffs.length;
+  const target = data.pages.find(p=>p.id===document.getElementById('recPage').value)?.target || 5;
+  const lateCount = diffs.filter(d=>d>target).length;
+  document.getElementById('recAvg').value = avg.toFixed(1);
+  document.getElementById('recTotal').value = diffs.length;
+  document.getElementById('recLate').value = lateCount;
+  pmsg.style.color='var(--good)'; pmsg.textContent = `تم الحساب: ${diffs.length} رد، متوسط ${avg.toFixed(1)} دقيقة. راجع الحقول فوق واحفظ السجل.`;
+}
+
+function renderKPIs(){
+  const box = document.getElementById('kpiRow');
+  const recs = data.records;
+  if(!recs.length){
+    box.innerHTML = `<div class="kpi"><div class="label">متوسط عام</div><div class="value">—</div></div>
+      <div class="kpi"><div class="label">أبطأ موظفة</div><div class="value">—</div></div>
+      <div class="kpi"><div class="label">أسرع موظفة</div><div class="value">—</div></div>
+      <div class="kpi"><div class="label">شيفتات متأخرة</div><div class="value">—</div></div>`;
+    return;
+  }
+  const overallAvg = recs.reduce((a,r)=>a+r.avg,0)/recs.length;
+  const byAgent = {};
+  recs.forEach(r=>{ (byAgent[r.agent] = byAgent[r.agent]||[]).push(r.avg); });
+  const agentAverages = Object.entries(byAgent).map(([a,v])=>[a, v.reduce((x,y)=>x+y,0)/v.length]);
+  agentAverages.sort((a,b)=>b[1]-a[1]);
+  const slowest = agentAverages[0], fastest = agentAverages[agentAverages.length-1];
+  const lateShifts = recs.filter(r=>{
+    const pg = data.pages.find(p=>p.id===r.pageId);
+    return pg && statusOf(r.avg, pg.target) !== 'good';
+  }).length;
+
+  box.innerHTML = `
+    <div class="kpi"><div class="label">متوسط وقت الرد عام</div><div class="value">${overallAvg.toFixed(1)}<span> دقيقة</span></div></div>
+    <div class="kpi bad"><div class="label">أبطأ موظفة</div><div class="value" style="font-size:18px;">${slowest?slowest[0]:'—'}<div style="font-size:13px;color:var(--muted);margin-top:4px;">${slowest?slowest[1].toFixed(1)+' د':''}</div></div></div>
+    <div class="kpi good"><div class="label">أسرع موظفة</div><div class="value" style="font-size:18px;">${fastest?fastest[0]:'—'}<div style="font-size:13px;color:var(--muted);margin-top:4px;">${fastest?fastest[1].toFixed(1)+' د':''}</div></div></div>
+    <div class="kpi ${lateShifts>0?'warn':'good'}"><div class="label">شيفتات متأخرة عن الهدف</div><div class="value">${lateShifts}<span> شيفت</span></div></div>
+  `;
+}
+
+function renderPulseBoard(){
+  const box = document.getElementById('pulseBoard');
+  if(!data.pages.length){ box.innerHTML=''; document.getElementById('emptyHintPulse'); return; }
+  let html = '';
+  data.pages.forEach(pg=>{
+    ['صبح','ليل'].forEach(shift=>{
+      const recs = data.records.filter(r=>r.pageId===pg.id && r.shift===shift).sort((a,b)=> new Date(b.date)-new Date(a.date));
+      const latest = recs[0];
+      let statusClass = 'none', timeLabel = '—', agentLabel = 'لا توجد بيانات بعد';
+      if(latest){
+        statusClass = statusOf(latest.avg, pg.target);
+        timeLabel = latest.avg.toFixed(1)+' د';
+        agentLabel = `${latest.agent} · ${latest.date}`;
+      }
+      html += `<div class="pcard">
+        <div class="top"><span class="pname">${pg.name}</span><span class="shift">${shift}</span></div>
+        <div class="status"><span class="pulse ${statusClass}"></span><span class="time">${timeLabel}</span></div>
+        <div class="agent">${agentLabel}</div>
+      </div>`;
+    });
+  });
+  box.innerHTML = html;
+}
+
+function renderTable(){
+  const fPage = document.getElementById('fPage').value;
+  const fShift = document.getElementById('fShift').value;
+  const fAgent = document.getElementById('fAgent').value;
+  let recs = data.records.slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
+  if(fPage) recs = recs.filter(r=>r.pageId===fPage);
+  if(fShift) recs = recs.filter(r=>r.shift===fShift);
+  if(fAgent) recs = recs.filter(r=>r.agent===fAgent);
+
+  const agentSet = [...new Set(data.records.map(r=>r.agent))];
+  document.getElementById('fAgent').innerHTML = '<option value="">كل الموظفات</option>' + agentSet.map(a=>`<option ${a===fAgent?'selected':''} value="${a}">${a}</option>`).join('');
+
+  const body = document.getElementById('recTableBody');
+  document.getElementById('emptyHint').style.display = data.records.length? 'none':'block';
+  body.innerHTML = recs.map(r=>{
+    const pg = data.pages.find(p=>p.id===r.pageId);
+    const st = pg ? statusOf(r.avg, pg.target) : 'good';
+    return `<tr>
+      <td>${r.date}</td>
+      <td>${pg?pg.name:'—'}</td>
+      <td>${r.shift}</td>
+      <td>${r.agent}</td>
+      <td class="mono">${r.avg.toFixed(1)} د</td>
+      <td class="mono">${r.total}</td>
+      <td class="mono">${r.late}</td>
+      <td><span class="badge ${st}">${statusLabel(st)}</span> ${r.auto?'<span class="sub" style="font-size:10px;color:var(--muted);">أوتو</span>':''}</td>
+      <td>${r.auto?'':'<span class="del" onclick="removeRecord(\''+r.id+'\')">حذف</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAgentChart(){
+  const byAgent = {};
+  data.records.forEach(r=>{ (byAgent[r.agent] = byAgent[r.agent]||[]).push(r.avg); });
+  const labels = Object.keys(byAgent);
+  const values = labels.map(a=> (byAgent[a].reduce((x,y)=>x+y,0)/byAgent[a].length).toFixed(1));
+  const ctx = document.getElementById('agentChart');
+  if(agentChart) agentChart.destroy();
+  agentChart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'متوسط الرد (دقيقة)', data: values, backgroundColor:'#F0A62A', borderRadius:6 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#8B98A5'}, grid:{color:'#28323C'}}, y:{ticks:{color:'#8B98A5'}, grid:{color:'#28323C'}}}
+    }
+  });
+}
+
+function renderTrendChart(){
+  const pageId = document.getElementById('trendPageFilter').value;
+  const recs = data.records.filter(r=>r.pageId===pageId).sort((a,b)=> new Date(a.date)-new Date(b.date));
+  const labels = recs.map(r=>r.date+' ('+r.shift+')');
+  const values = recs.map(r=>r.avg);
+  const ctx = document.getElementById('trendChart');
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ label:'متوسط الرد', data: values, borderColor:'#2DD4A7', backgroundColor:'rgba(45,212,167,.12)', tension:.3, fill:true, pointRadius:3 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#8B98A5',maxRotation:60,minRotation:60}, grid:{color:'#28323C'}}, y:{ticks:{color:'#8B98A5'}, grid:{color:'#28323C'}}}
+    }
+  });
+}
+
+function renderAll(){
+  fillPageSelects();
+  renderPageTags();
+  renderKPIs();
+  renderPulseBoard();
+  renderTable();
+  renderAgentChart();
+  renderTrendChart();
+  renderMessageLog();
+}
+
+function fmtTime(iso){
+  try{
+    return new Date(iso).toLocaleString('ar-EG', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  }catch(e){ return iso; }
+}
+
+function renderMessageLog(){
+  const pageOpts = data.pages.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+  document.getElementById('mfPage').innerHTML = '<option value="">كل الصفحات</option>' + pageOpts;
+  const agentSet = [...new Set(data.messageLog.map(m=>m.agent))];
+  const fAgentSel = document.getElementById('mfAgent');
+  const curAgent = fAgentSel.value;
+  fAgentSel.innerHTML = '<option value="">كل الموظفات</option>' + agentSet.map(a=>`<option ${a===curAgent?'selected':''} value="${a}">${a}</option>`).join('');
+
+  const fPage = document.getElementById('mfPage').value;
+  const fShift = document.getElementById('mfShift').value;
+  const fAgent = document.getElementById('mfAgent').value;
+  const fLate = document.getElementById('mfLate').value;
+
+  let rows = data.messageLog.slice().sort((a,b)=> new Date(b.customerTime) - new Date(a.customerTime));
+  if(fPage) rows = rows.filter(m=>m.pageName===fPage);
+  if(fShift) rows = rows.filter(m=>(m.shift==='morning'?'صبح':'ليل')===fShift);
+  if(fAgent) rows = rows.filter(m=>m.agent===fAgent);
+  if(fLate==='late') rows = rows.filter(m=>m.late);
+
+  const body = document.getElementById('msgLogBody');
+  document.getElementById('msgLogEmptyHint').style.display = data.messageLog.length? 'none':'block';
+  body.innerHTML = rows.slice(0,300).map(m=>{
+    const shiftLabel = m.shift==='morning'?'صبح':'ليل';
+    const delayClass = m.late ? 'bad' : 'good';
+    return `<tr>
+      <td>${m.agent}</td>
+      <td>${m.pageName}</td>
+      <td>${shiftLabel}</td>
+      <td>${m.customerName}</td>
+      <td class="mono">${fmtTime(m.customerTime)}</td>
+      <td class="mono">${fmtTime(m.replyTime)}</td>
+      <td><span class="badge ${delayClass}">${m.delayMinutes.toFixed(1)} د</span></td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('mfPage').addEventListener('change', renderMessageLog);
+document.getElementById('mfShift').addEventListener('change', renderMessageLog);
+document.getElementById('mfAgent').addEventListener('change', renderMessageLog);
+document.getElementById('mfLate').addEventListener('change', renderMessageLog);
+
+document.getElementById('fPage').addEventListener('change', renderTable);
+document.getElementById('fShift').addEventListener('change', renderTable);
+document.getElementById('fAgent').addEventListener('change', renderTable);
+document.getElementById('trendPageFilter').addEventListener('change', renderTrendChart);
+
+(async function init(){
+  document.getElementById('recDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('ar-EG', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  await loadData();
+  if(data.ghOwner) document.getElementById('ghOwner').value = data.ghOwner;
+  if(data.ghRepo) document.getElementById('ghRepo').value = data.ghRepo;
+  if(data.ghPath) document.getElementById('ghPath').value = data.ghPath;
+  if(data.ghToken) document.getElementById('ghToken').value = data.ghToken;
+  renderAll();
+  if(data.ghToken){ syncFromUrl(); setInterval(syncFromUrl, 5*60*1000); }
+})();
+</script>
+</body>
+</html>
